@@ -31,7 +31,7 @@ export function registerConsoleTools({ server, session, config }: Ctx) {
           .max(600000)
           .default(0)
           .describe("wait this long for new data first (with `until`: at most this long)"),
-        until: z.string().max(200).optional().describe("regex (case-insensitive) to wait for"),
+        until: z.string().max(1000).optional().describe("regex (case-insensitive) to wait for"),
       },
       annotations: { readOnlyHint: true },
     },

@@ -12,6 +12,8 @@ const ConfigSchema = z.object({
   /** Target keyboard layout once an OS is running. BIOS/GRUB are always "us". */
   layout: z.enum(["us", "abnt2"]).default("us"),
   workDir: z.string().default(path.join(os.homedir(), ".cache", "barehand")),
+  /** HTTP port of the netboot server (lab/run-target.sh reads the same BAREHAND_NETBOOT_PORT). */
+  netbootPort: z.number().int().min(1).max(65535).default(8067),
   /** Socket paths default to <workDir>/lab/, where lab/run-target.sh creates them. */
   qemu: z
     .object({
@@ -72,6 +74,7 @@ export function loadConfig(): { config: Config; source?: string } {
   if (env.BAREHAND_BACKEND) raw.backend = env.BAREHAND_BACKEND;
   if (env.BAREHAND_LAYOUT) raw.layout = env.BAREHAND_LAYOUT;
   if (env.BAREHAND_WORKDIR) raw.workDir = env.BAREHAND_WORKDIR;
+  if (env.BAREHAND_NETBOOT_PORT) raw.netbootPort = Number(env.BAREHAND_NETBOOT_PORT);
   if (env.BAREHAND_QMP || env.BAREHAND_QEMU_SERIAL) {
     raw.qemu = { ...raw.qemu };
     if (env.BAREHAND_QMP) raw.qemu.qmp = env.BAREHAND_QMP;

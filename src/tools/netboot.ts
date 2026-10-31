@@ -87,7 +87,7 @@ export function registerNetbootTools({ server, config }: Ctx) {
         timeout_s: z.number().min(0).max(600).default(5),
         extra_args: z.string().default("").describe("extra kernel arguments, e.g. autoinstall / inst.ks=… / nomodeset"),
         server_ip: z.string().optional().describe("this machine's IP on the target's network (auto-detected)"),
-        http_port: z.number().int().min(1).max(65535).default(8067),
+        http_port: z.number().int().min(1).max(65535).optional().describe("default: config netbootPort (8067)"),
       },
     },
     ({ isos, mode, default: def, timeout_s, extra_args, server_ip, http_port }) =>
@@ -108,7 +108,7 @@ export function registerNetbootTools({ server, config }: Ctx) {
           workDir: config.workDir,
           isoPaths,
           serverIp: server_ip,
-          httpPort: http_port,
+          httpPort: http_port ?? config.netbootPort,
           defaultEntry,
           timeoutS: timeout_s,
           consoleArgs: consoleArgsFor(config.backend),

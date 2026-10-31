@@ -247,7 +247,13 @@ export class NetbootServer {
   }
 
   autoexec(): string {
-    return `#!ipxe\ndhcp || echo barehand: dhcp failed\nchain ${this.baseUrl}/boot.ipxe || shell\n`;
+    // If barehand isn't serving (anymore), hand control back to the firmware so it tries the next boot option
+    // instead of trapping the machine in an iPXE shell.
+    return (
+      `#!ipxe\ndhcp || echo barehand: dhcp failed\n` +
+      `chain ${this.baseUrl}/boot.ipxe || echo barehand: menu unreachable, back to firmware boot order\n` +
+      `sleep 2\nexit 1\n`
+    );
   }
 
   /** proxyDHCP policy: what each PXE client gets. */

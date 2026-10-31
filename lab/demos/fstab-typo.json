@@ -1,28 +1,31 @@
 {
-  "comment": "Short clip of the fstab-typo lab run (2026-10-31). Every line is verbatim from that run's serial console and tool-call journal; long UUIDs are shortened with … the way systemd does.",
+  "comment": "Short clip of the fstab-typo lab run (2026-10-31). Every line is verbatim from that run's ticket, serial console and tool-call journal; long UUIDs are shortened with … the way systemd does.",
   "frames": "~/.cache/barehand/eval/slot2/rec",
+  "calls": "~/.cache/barehand/eval/slot2/calls.jsonl",
   "segments": [
     {
-      "caption": "won't boot · serial console",
-      "hold": 3.5,
+      "caption": "the customer's ticket",
+      "title": "“I tried to make my external backup drive mount automatically by following a tutorial. Now the computer starts booting but never finishes.”",
+      "at": "2026-10-31T20:58:50Z",
+      "hold": 4.5,
       "lines": [
         "![ TIME ] Timed out waiting for device dev-d…1f2e1a-0b7d-4d5e-9a51-3f0c2b8e7d44.",
         "![DEPEND] Dependency failed for mnt-backup.mount - /mnt/backup.",
         "![DEPEND] Dependency failed for local-fs.target - Local File Systems.",
         "[  OK  ] Reached target emergency.target - Emergency Mode.",
         "You are in emergency mode. After logging in, type \"journalctl -xb\" to view",
-        "system logs, \"systemctl reboot\" to reboot, or \"exit\"",
-        "to continue bootup.",
+        "system logs, \"systemctl reboot\" to reboot, or \"exit\" to continue bootup.",
         "!Cannot open access to console, the root account is locked."
       ]
     },
     {
       "caption": "network boot · rescue system",
       "screen": { "from": "2026-10-31T20:59:50Z", "to": "2026-10-31T21:02:51Z" },
-      "hold": 5
+      "hold": 5.5
     },
     {
       "caption": "fix · over the serial shell",
+      "at": "2026-10-31T21:03:05.5Z",
       "hold": 2.6,
       "lines": [
         "$[root@sysrescue ~]# cat -A /mnt/root/etc/fstab",
@@ -33,6 +36,7 @@
     },
     {
       "caption": "fix · over the serial shell",
+      "at": "2026-10-31T21:03:15.5Z",
       "hold": 3,
       "lines": [
         "$[root@sysrescue ~]# diff fstab.bak-before-nofail fstab",
@@ -43,11 +47,23 @@
       ]
     },
     {
-      "caption": "power-cycled, no help · boots on its own, files intact",
-      "hold": 3.8,
+      "caption": "check the customer's files before rebooting",
+      "at": "2026-10-31T21:03:26.4Z",
+      "hold": 2.2,
+      "lines": [
+        "$[root@sysrescue ~]# find /mnt/root/home/ana -type f | xargs ls -l",
+        "-rw-r--r-- 1 root root   8106 Oct 31 20:45 /mnt/root/home/ana/Documents/thesis-final-v7.txt",
+        "-rw-r--r-- 1 root root 200000 Oct 31 20:45 /mnt/root/home/ana/Pictures/graduation.jpg"
+      ]
+    },
+    {
+      "caption": "result",
+      "title": "✓ Fixed. Power-cycled with no help: boots to the login prompt, customer files verified intact.",
+      "titleColor": "0x3fb950",
+      "at": "2026-10-31T21:05:55Z",
+      "hold": 4.5,
       "lines": [
         "[  OK  ] Reached target multi-user.target - Multi-User System.",
-        "[  OK  ] Reached target graphical.target - Graphical Interface.",
         "         Starting boot-report.service - Rep…ot completion on the serial line...",
         "+BAREHAND-CANARY ok",
         "",

@@ -182,12 +182,12 @@ An agent that can format disks needs guardrails that don't depend on it behaving
 - [x] Built-in network boot: proxyDHCP + TFTP + HTTP, ISO 9660 reader, recipes for 6 distro families + WinPE
 - [x] Destructive-command guard, disk identity check, pre-change snapshots
 - [x] QEMU lab backend + target VM script
+- [x] Validated end to end in the lab: reset → network boot of SystemRescue 13.02 → root shell over serial → `hw_identify` → guarded partitioning, ~2 min without KVM
 - [x] Skill with first playbooks (BIOS, boot repair, install, no-power triage, manuals)
-- [ ] Validate end to end in the lab with a real rescue ISO
 - [ ] ESP32-S3 firmware validated on hardware (written, not yet flashed) + DIY backend tested
 - [ ] Broken-on-purpose lab scenarios as evals
 - [ ] Rescue image with an auto-login serial shell
-- [ ] Network-boot validation on real PXE ROMs (Intel, Realtek, Broadcom) and in the lab
+- [ ] Network-boot validation on real PXE ROMs (Intel, Realtek, Broadcom)
 - [ ] Full Windows install over the network (SMB share for install.wim)
 - [ ] Bundled POST/beep code tables
 - [ ] `npx barehand setup --client …` for one-command registration
@@ -195,8 +195,8 @@ An agent that can format disks needs guardrails that don't depend on it behaving
 
 ## Status
 
-🚧 **Early development.** The design is settled and the code is being written. Nothing here is ready to
-point at a machine whose data you care about yet. Watch the repo to follow along.
+🚧 **Early development.** The full loop works in the QEMU lab; real hardware (ESP32-S3 firmware, PXE ROMs) is
+next. Nothing here is ready to point at a machine whose data you care about yet. Watch the repo to follow along.
 
 <div align="center">
 <sub>Part of a family of agent toolkits that bring AI to places it couldn't reach before.</sub>

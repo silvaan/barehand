@@ -11,7 +11,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { QmpClient } from "./qmp.js";
-import { pngSize } from "../util/frames.js";
+import { pngSize, ppmToPng } from "../util/frames.js";
 import type { Backend, Capabilities, Frame, KeyStroke, MouseButton, PowerState } from "./types.js";
 import { Mod } from "./types.js";
 
@@ -53,6 +53,8 @@ export class QemuBackend implements Backend {
   private held = new Set<string>();
   /** Emulated "hard off": VM paused by us after a long power press. */
   private forcedOff = false;
+  /** QEMU < 7.1 rejects screendump's "format" argument and only writes PPM. */
+  private ppmOnly = false;
 
   constructor(private readonly opts: QemuOptions) {
     this.qmp = new QmpClient({ address: opts.qmp });
@@ -91,10 +93,19 @@ export class QemuBackend implements Backend {
   }
 
   async capture(): Promise<Frame> {
-    const file = path.join(os.tmpdir(), `barehand-qemu-${process.pid}-${Date.now()}.png`);
+    const file = path.join(os.tmpdir(), `barehand-qemu-${process.pid}-${Date.now()}.img`);
     try {
-      await this.qmp.execute("screendump", { filename: file, format: "png" });
-      const png = await fs.readFile(file);
+      if (!this.ppmOnly) {
+        try {
+          await this.qmp.execute("screendump", { filename: file, format: "png" });
+        } catch (e) {
+          if (!/format/i.test(String((e as Error).message))) throw e;
+          this.ppmOnly = true;
+        }
+      }
+      if (this.ppmOnly) await this.qmp.execute("screendump", { filename: file });
+      const raw = await fs.readFile(file);
+      const png = this.ppmOnly ? ppmToPng(raw) : raw;
       const { width, height } = pngSize(png);
       return { png, width, height, capturedAt: Date.now() };
     } finally {

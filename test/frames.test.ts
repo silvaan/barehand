@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PNG } from "pngjs";
 import { PngStreamSplitter } from "../src/util/pngstream.js";
-import { darkness, pngSize, thumbDiff, thumbOfPng } from "../src/util/frames.js";
+import { darkness, pngSize, ppmToPng, thumbDiff, thumbOfPng } from "../src/util/frames.js";
 
 function solidPng(w: number, h: number, rgb: [number, number, number], box?: { x: number; y: number; w: number; h: number; rgb: [number, number, number] }) {
   const png = new PNG({ width: w, height: h });
@@ -49,5 +49,20 @@ describe("PngStreamSplitter", () => {
       { width: 32, height: 8 },
     ]);
     expect(frames[0]!.equals(a)).toBe(true);
+  });
+});
+
+describe("ppmToPng", () => {
+  it("converts binary PPM (QEMU < 7.1 screendump) with comments", () => {
+    const header = Buffer.from("P6\n# qemu\n2 1\n255\n", "latin1");
+    const ppm = Buffer.concat([header, Buffer.from([255, 0, 0, 0, 0, 255])]);
+    const png = ppmToPng(ppm);
+    expect(pngSize(png)).toEqual({ width: 2, height: 1 });
+    const img = PNG.sync.read(png);
+    expect([...img.data]).toEqual([255, 0, 0, 255, 0, 0, 255, 255]);
+  });
+
+  it("rejects truncated data", () => {
+    expect(() => ppmToPng(Buffer.from("P6 4 4 255\n\x00\x00", "latin1"))).toThrow(/Truncated/);
   });
 });

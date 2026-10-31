@@ -35,11 +35,20 @@ export function createServer() {
 
 export async function serveStdio() {
   const { server, session } = createServer();
+  let closing = false;
   const shutdown = async () => {
+    if (closing) return;
+    closing = true;
     await session.close().catch(() => {});
     process.exit(0);
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
-  await server.connect(new StdioServerTransport());
+  // The client went away (crashed, killed, closed the pipe): exit instead of lingering as an orphan that keeps
+  // the netboot ports, the QMP connection and the serial port open.
+  process.stdin.on("end", shutdown);
+  process.stdin.on("close", shutdown);
+  const transport = new StdioServerTransport();
+  transport.onclose = () => void shutdown();
+  await server.connect(transport);
 }

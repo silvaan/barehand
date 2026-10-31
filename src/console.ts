@@ -12,7 +12,7 @@ import type { Backend } from "./hal/types.js";
 const MAX_BUFFER = 1 << 20; // keep the last 1 MiB
 
 // eslint-disable-next-line no-control-regex
-const ANSI = /\x1b\[[0-?]*[ -/]*[@-~]|\x1b[()][0-9A-Za-z]|\x1b[=>]|\r/g;
+const ANSI = /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b\[[0-?]*[ -/]*[@-~]|\x1b[()][0-9A-Za-z]|\x1b[=>]|\r/g;
 
 export function stripAnsi(s: string): string {
   return s.replace(ANSI, "");

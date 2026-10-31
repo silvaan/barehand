@@ -19,20 +19,33 @@ export function registerConsoleTools({ server, session, config }: Ctx) {
       title: "Read the serial console",
       description:
         "Read raw text that arrived on the target's console (serial / USB CDC) since `since` (a cursor returned " +
-        "by a previous call; 0 = everything buffered). Use it to see login prompts, kernel messages, GRUB on serial.",
+        "by a previous call; 0 = everything buffered). Use it to see login prompts, kernel messages, GRUB on serial. " +
+        "With `until` (a regex, e.g. \"login:\"), it returns as soon as that text shows up after `since`, waiting at " +
+        "most wait_ms: use it to wait for a boot to finish without polling.",
       inputSchema: {
         since: z.number().int().min(0).default(0),
         max_bytes: z.number().int().min(256).max(200000).default(16384),
-        wait_ms: z.number().min(0).max(30000).default(0).describe("wait this long for new data first"),
+        wait_ms: z
+          .number()
+          .min(0)
+          .max(600000)
+          .default(0)
+          .describe("wait this long for new data first (with `until`: at most this long)"),
+        until: z.string().max(200).optional().describe("regex (case-insensitive) to wait for"),
       },
       annotations: { readOnlyHint: true },
     },
-    ({ since, max_bytes, wait_ms }) =>
+    ({ since, max_bytes, wait_ms, until }) =>
       guarded(async () => {
         const c = await session.requireConsole();
-        if (wait_ms) await sleep(wait_ms);
+        let matched: boolean | undefined;
+        if (until) matched = !!(await c.waitFor(new RegExp(until, "i"), since, wait_ms || 30000));
+        else if (wait_ms) await sleep(wait_ms);
         const r = c.read(since, max_bytes);
-        return [text(r.text || "(no data)"), json({ next_since: r.to, truncated: r.truncated })];
+        return [
+          text(r.text || "(no data)"),
+          json({ next_since: r.to, truncated: r.truncated, ...(until ? { matched } : {}) }),
+        ];
       }),
   );
 

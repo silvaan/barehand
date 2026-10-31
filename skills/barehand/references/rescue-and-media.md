@@ -13,7 +13,8 @@ If the system was network-booted by barehand, the console arguments are already 
 skip to step 2. Otherwise, with SystemRescue (root, no password):
 1. At its boot menu (US layout): UEFI → `e` on the entry, append `console=tty0 console=ttyS0,115200`
    (or `ttyACM0`) to the `linux` line, then Ctrl-X. BIOS/ISOLINUX → Tab, append, Enter.
-2. `console_read { wait_ms: 15000 }` until a `login:` prompt appears, then `console_send { data: "root\n" }`.
+2. `console_read { until: "login:", wait_ms: 300000 }` returns as soon as the prompt appears, then
+   `console_send { data: "root\n" }`.
 3. `shell_exec { command: "uname -a" }` to confirm.
 
 If no getty appears on ttyACM0, start one from the local screen with `type_text`:
@@ -37,8 +38,9 @@ still type commands with `type_text` and read the screen, but it's slow: get the
    the last line says where (no DHCP line means the target isn't on our L2 network or PXE is off).
 5. `netboot_stop` once the system is up.
 
-The kernel command line already includes the console arguments for `shell_exec`. With SystemRescue, a root
-login prompt appears on the console on its own.
+The kernel command line already includes the console arguments for `shell_exec`. SystemRescue logs root in on
+the console by itself: `console_read { until: "automatic login", wait_ms: 600000 }`, then `shell_exec` right away.
+In the lab (no KVM) that takes about 2 minutes from reset; on real hardware, well under a minute.
 
 | Fallbacks | How |
 |---|---|

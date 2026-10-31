@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Console } from "../src/console.js";
+import { Console, stripAnsi } from "../src/console.js";
 import type { Backend } from "../src/hal/types.js";
 
 /**
@@ -71,5 +71,14 @@ describe("Console.exec", () => {
     await c.exec("echo hello", 2000);
     expect(c.read(before).text).toContain("hello");
     expect(c.read(c.cursor).text).toBe("");
+  });
+});
+
+describe("stripAnsi", () => {
+  it("removes CSI colours and systemd's OSC 3008 context markers", () => {
+    const raw =
+      "\x1b]3008;start=6d71;user=root;type=session\x1b\\\x1b]3008;start=6a56;type=shell\x07" +
+      "\x1b[1;31m[root@sysrescue ~]#\x1b[0m \r\n";
+    expect(stripAnsi(raw)).toBe("[root@sysrescue ~]# \n");
   });
 });

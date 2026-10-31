@@ -23,6 +23,33 @@ export function decodePng(png: Buffer): { width: number; height: number; data: B
   return { width: img.width, height: img.height, data: img.data };
 }
 
+/** Binary PPM (P6, maxval 255) -> PNG. QEMU < 7.1 can only screendump PPM. */
+export function ppmToPng(ppm: Buffer): Buffer {
+  // Header: "P6" <ws> width <ws> height <ws> maxval <single ws>, with optional # comments.
+  const fields: string[] = [];
+  let i = 0;
+  while (fields.length < 4) {
+    while (i < ppm.length && /\s/.test(String.fromCharCode(ppm[i]!))) i++;
+    if (ppm[i] === 0x23) { while (i < ppm.length && ppm[i] !== 0x0a) i++; continue; }
+    const start = i;
+    while (i < ppm.length && !/\s/.test(String.fromCharCode(ppm[i]!))) i++;
+    fields.push(ppm.toString("latin1", start, i));
+  }
+  i++; // the single whitespace byte after maxval
+  const [magic, w, h, max] = fields;
+  const width = Number(w), height = Number(h);
+  if (magic !== "P6" || max !== "255" || !(width > 0 && height > 0)) throw new Error("Unsupported PPM");
+  if (ppm.length < i + width * height * 3) throw new Error("Truncated PPM");
+  const png = new PNG({ width, height });
+  for (let p = 0, s = i, d = 0; p < width * height; p++, s += 3, d += 4) {
+    png.data[d] = ppm[s]!;
+    png.data[d + 1] = ppm[s + 1]!;
+    png.data[d + 2] = ppm[s + 2]!;
+    png.data[d + 3] = 255;
+  }
+  return PNG.sync.write(png);
+}
+
 export function pngSize(png: Buffer): { width: number; height: number } {
   // IHDR is always the first chunk: width/height at byte offsets 16 and 20.
   if (png.length < 24 || png.readUInt32BE(12) !== 0x49484452) {

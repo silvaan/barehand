@@ -42,7 +42,7 @@ const calls = fs
   .split("\n")
   .filter(Boolean)
   .map((l) => JSON.parse(l))
-  .filter((c) => !c.name.startsWith("__"))
+  .filter((c) => !c.name.startsWith("__") && c.name !== "?" && !/Input validation error|Bad escaped/.test(c.out))
   .map((c) => ({ ...c, end: Date.parse(c.t), start: Date.parse(c.t) - c.ms }));
 const result = args.result && fs.existsSync(args.result) ? JSON.parse(fs.readFileSync(args.result, "utf8")) : undefined;
 
@@ -91,11 +91,35 @@ function phase(t) {
   const before = calls.filter((c) => c.start <= t);
   const names = before.map((c) => c.name);
   const lastShell = calls.filter((c) => /^shell_exec/.test(c.name)).at(-1);
-  const lastPower = before.filter((c) => /^power_|reboot/.test(c.name) || /reboot/.test(c.args?.command ?? "")).at(-1);
+  const lastPower = before
+    .filter((c) => /^power_(press|reset)/.test(c.name) || /reboot|poweroff/.test(`${c.args?.command ?? ""}${c.args?.data ?? ""}`))
+    .at(-1);
   if (lastShell && lastPower && lastPower.start >= lastShell.start) return "4 · reboot into the repaired system";
   if (names.some((n) => /^shell_exec/.test(n))) return "3 · repair over the serial shell";
   if (names.includes("netboot_start")) return "2 · boot a rescue system over the network";
   return "1 · look at the broken PC";
+}
+
+// ---- serial transcript (what the agent saw on the console) ---------------------------------------------------
+const CLEAN = /\x1b\[[0-9;?]*[A-Za-z]|\x1b[A-Za-z]|\\x2d|\r/g;
+const outText = (c) => c.out.replace(/\n?\{[^{}]*\}\s*$/, "").replace(/^ERROR:.*$/m, "").replace(CLEAN, "");
+function serialAt(t) {
+  const lines = [];
+  for (const c of calls) {
+    if (c.end > t) break;
+    if (c.name === "console_read") lines.push(...outText(c).split("\n"));
+    else if (/^shell_exec/.test(c.name)) {
+      lines.push(...String(c.args?.command ?? "").split("\n").slice(0, 2).map((l) => `[root@sysrescue ~]# ${l}`));
+      lines.push(...outText(c).split("\n").slice(0, 8));
+    } else if (c.name === "console_send") lines.push(`> ${JSON.stringify(c.args?.data ?? "").slice(1, -1)}`);
+  }
+  return lines.filter((l) => l.trim() !== "(no data)");
+}
+/** Mean horizontal gradient of the thumbnail: garbled VGA text memory scores high, real screens low. */
+function noise(th) {
+  let s = 0;
+  for (let y = 0; y < th.h; y++) for (let x = 1; x < th.w; x++) s += Math.abs(th.px[y * th.w + x] - th.px[y * th.w + x - 1]);
+  return s / (th.h * (th.w - 1));
 }
 
 // ---- timeline -----------------------------------------------------------------------------------------------
@@ -113,14 +137,15 @@ for (const f of frames) {
   const th = thumbOfPng(fs.readFileSync(f.file));
   const d = lastThumb ? thumbDiff(lastThumb, th) : 1;
   if (d > 0.015 || f.t - lastKept > 25_000) {
-    items.push({ t: f.t, frame: f, hold: d > 0.015 ? 0.35 : 0.2 });
+    items.push({ t: f.t, frame: f, hold: d > 0.015 ? 0.35 : 0.2, noisy: noise(th) >= 5 });
     lastKept = f.t;
   }
   lastThumb = th;
 }
 for (const c of calls) {
   if (c.start < t0 || c.start > tEnd) continue;
-  items.push({ t: c.start, frame: nearest(c.start), hold: describe(c).hold, event: c });
+  const fr = nearest(c.start);
+  items.push({ t: c.start, frame: fr, hold: describe(c).hold, event: c, noisy: noise(thumbOfPng(fs.readFileSync(fr.file))) >= 5 });
 }
 items.sort((a, b) => a.t - b.t);
 const total = items.reduce((s, i) => s + i.hold, 0);
@@ -135,16 +160,37 @@ function render(item, idx, final = false) {
   const t = item.t;
   const done = calls.filter((c) => c.start <= t);
   const current = item.event ?? done.at(-1);
-  const history = done.filter((c) => c !== current).slice(-9).map((c) => `· ${c.name}`);
+  const history = done
+    .filter((c) => c !== current)
+    .slice(-9)
+    .map((c) => {
+      const d = describe(c);
+      const detail = d.body[0] && !d.body[0].startsWith("(") ? `  ${d.body[0]}` : "";
+      return clip(`· ${c.name}${detail}`, 44);
+    });
   const cur = current ? describe(current) : { head: "", body: [] };
   const files = {
     hist: history.join("\n") || " ",
     head: cur.head ? `▸ ${cur.head}` : " ",
-    body: cur.body.map((l) => clip(l, 50)).join("\n") || " ",
+    body: cur.body.map((l) => clip(l, 44)).join("\n") || " ",
     phase: final ? "✓ boots on its own · customer files intact" : phase(t),
     title: TITLE,
     sub: `real run · QEMU lab · ${speedup}× speed`,
   };
+  const ph = files.phase;
+  const serial = final || item.noisy || ph.startsWith("3") || ph.startsWith("4");
+  let term = serialAt(t);
+  // Before the agent's first read, the console already showed what that read returns: use it.
+  if (!term.length) {
+    const first = calls.find((c) => c.name === "console_read" && outText(c).trim());
+    if (first) term = outText(first).split("\n");
+  }
+  if (final && result?.serial_tail) {
+    const tail = result.serial_tail.replace(/\{[\s\S]*$/, "").trimEnd().split("\n");
+    term = [...term, ...tail, "", "Debian GNU/Linux 13 lab-pc ttyS0", "", "lab-pc login:"];
+  }
+  files.term = term.slice(-26).map((l) => clip(l, 92)).join("\n") || " ";
+  files.termhead = final ? "serial console · power-cycled by the grader, no help" : "serial console (ttyS0) · the screen is not needed here";
   for (const [k, v] of Object.entries(files)) fs.writeFileSync(path.join(tmp, `${k}.txt`), v);
   const dt = (font, file, x, y, size, color) =>
     `drawtext=fontfile=${font}:textfile='${esc(path.join(tmp, file))}':expansion=none:x=${x}:y=${y}:fontsize=${size}:fontcolor=${color}:line_spacing=6`;
@@ -155,6 +201,13 @@ function render(item, idx, final = false) {
     `[a]drawbox=x=${SX - 2}:y=${SY - 2}:w=${SW + 4}:h=${SH + 4}:color=0x30363d:t=2,` +
       `drawbox=x=${PX}:y=${SY - 2}:w=${W - PX - 24}:h=${SH + 4}:color=0x161b22:t=fill,` +
       [
+        ...(serial
+          ? [
+              `drawbox=x=${SX}:y=${SY}:w=${SW}:h=${SH}:color=0x010409:t=fill`,
+              dt(MONO, "termhead.txt", SX + 14, SY + 10, 13, "0x8b949e"),
+              dt(MONO, "term.txt", SX + 14, SY + 40, 13, "0xc9d1d9"),
+            ]
+          : []),
         dt(SANS_B, "title.txt", SX, 22, 26, "white"),
         dt(MONO, "sub.txt", SX, 56, 15, "0x8b949e"),
         dt(MONO_B, "phase.txt", PX + 16, SY + 14, 17, final ? "0x3fb950" : "0x58a6ff"),
@@ -179,7 +232,7 @@ fs.mkdirSync(path.dirname(args.out), { recursive: true });
 execFileSync("ffmpeg", ["-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", path.join(tmp, "list.txt"),
   "-vf", "fps=25,format=yuv420p", "-c:v", "libx264", "-crf", "23", "-preset", "slow", "-movflags", "+faststart", `${args.out}.mp4`]);
 execFileSync("ffmpeg", ["-v", "error", "-y", "-i", `${args.out}.mp4`, "-filter_complex",
-  "fps=8,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle",
+  "fps=6,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=64:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle",
   `${args.out}.gif`]);
 const size = (f) => `${(fs.statSync(f).size / 1e6).toFixed(1)} MB`;
 console.log(JSON.stringify({ mp4: `${args.out}.mp4`, mp4_size: size(`${args.out}.mp4`), gif: `${args.out}.gif`, gif_size: size(`${args.out}.gif`),

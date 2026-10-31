@@ -38,3 +38,15 @@ The call helper exists for agents that can only run shell commands; an MCP clien
 
 Disks are qcow2 overlays (Debian image → base → scenario → slot), so `up` takes a second and never modifies the
 prepared images.
+
+## Recording a demo
+
+```bash
+node lab/record-vnc.mjs 127.0.0.1:5911 ~/.cache/barehand/eval/slot1/rec &   # VNC :11 = slot 1; doesn't touch QMP
+# … agent run, then `eval.mjs check 1` …
+node lab/make-demo.mjs --frames ~/.cache/barehand/eval/slot1/rec --calls ~/.cache/barehand/eval/slot1/calls.jsonl \
+  --result ~/.cache/barehand/eval/slot1/result.json --out docs/media/demo --seconds 36
+```
+
+The video shows the target's screen while pixels matter (firmware, boot menus, iPXE) and switches to the serial
+console the agent was reading when the screen is blank or garbled, which is exactly how barehand works.

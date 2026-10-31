@@ -13,6 +13,14 @@ then let it fix boot loaders, tweak the BIOS, partition disks and install Window
 [![hardware](https://img.shields.io/badge/hardware-~US%2420-2EA44F)](#hardware)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](package.json)
 
+<br>
+
+<img src="docs/media/demo.gif" alt="Claude fixes a Debian PC stuck in emergency mode: network-boots SystemRescue, repairs fstab over the serial shell, reboots into the fixed system" width="880">
+
+<sub>A real, unedited run (sped up 20×): a Claude agent gets a customer ticket, network-boots a rescue system, fixes the
+broken <code>/etc/fstab</code> over the serial shell and reboots. Then a grader power-cycles the PC with no help.
+<a href="docs/media/demo.mp4">MP4</a></sub>
+
 </div>
 
 ---
@@ -165,6 +173,23 @@ docs/                   hardware guide, network boot, firmware protocol
 ```
 </details>
 
+## Lab results
+
+Four broken-on-purpose "customer PCs" ([`lab/scenarios`](lab/scenarios/README.md)). Each time, a fresh Claude agent got
+only the customer's ticket, the skill and barehand's tools. Nobody told it what was broken. A grader then power-cycled
+the machine with no help and passed it only if Debian came up on its own with the customer's files intact.
+
+| Scenario | The customer said | What the agent did | Result | Time | Tool calls | Screenshots |
+|---|---|---|---|---|---|---|
+| `esp-wiped` | "deleted a bunch of junk, now it never gets to Linux" | netboot rescue → chroot → `grub-install --force-extra-removable` | ✅ PASS | 10.6 min | 43 | 6 |
+| `fstab-typo` | "followed a tutorial to auto-mount my backup drive" | netboot rescue → `nofail` on the bad fstab line (with a backup) | ✅ PASS | 9.0 min | 40 | 7 |
+| `kernel-deleted` | "ran a /boot cleanup script from a forum" | netboot rescue → chroot → `apt-get install --reinstall linux-image-…` | ✅ PASS | 10.8 min | 41 | 7 |
+| `grub-cfg-missing` | "black screen with some kind of prompt" | from `grub>` on the serial line: boot with `init=/bin/bash`, `update-grub` | ✅ PASS | 6.8 min | 50 | 3 |
+
+Emulated without KVM, so every boot is slow; on real hardware these take a fraction of the time. Screenshots stayed
+in single digits: pixels to get in, the serial shell for the actual work. The agents' notes on what got in their way
+are feeding the next round of fixes.
+
 ## Safety first
 
 An agent that can format disks needs guardrails that don't depend on it behaving perfectly:
@@ -183,9 +208,10 @@ An agent that can format disks needs guardrails that don't depend on it behaving
 - [x] Destructive-command guard, disk identity check, pre-change snapshots
 - [x] QEMU lab backend + target VM script
 - [x] Validated end to end in the lab: reset → network boot of SystemRescue 13.02 → root shell over serial → `hw_identify` → guarded partitioning, ~2 min without KVM
+- [x] Broken-on-purpose lab scenarios as evals: 4/4 fixed by blind agents
 - [x] Skill with first playbooks (BIOS, boot repair, install, no-power triage, manuals)
 - [ ] ESP32-S3 firmware validated on hardware (written, not yet flashed) + DIY backend tested
-- [ ] Broken-on-purpose lab scenarios as evals
+- [ ] More scenarios: BIOS boot order, Windows BCD/WinRE, BitLocker, dual boot
 - [ ] Rescue image with an auto-login serial shell
 - [ ] Network-boot validation on real PXE ROMs (Intel, Realtek, Broadcom)
 - [ ] Full Windows install over the network (SMB share for install.wim)

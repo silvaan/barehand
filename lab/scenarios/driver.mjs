@@ -51,7 +51,7 @@ http
         }
       }
       const text = (r.isError ? "ERROR: " : "") + out.join("\n");
-      journal.write(JSON.stringify({ t: new Date().toISOString(), ms: Date.now() - t0, name, args, error: !!r.isError, out: text.slice(0, 4000) }) + "\n");
+      journal.write(JSON.stringify({ t: new Date().toISOString(), ms: Date.now() - t0, name, args, error: !!r.isError, out: text.length > 4000 ? `${text.slice(0, 1000)}\n…\n${text.slice(-3000)}` : text }) + "\n");
       res.end(text + "\n");
     } catch (e) {
       journal.write(JSON.stringify({ t: new Date().toISOString(), ms: Date.now() - t0, name, args, error: true, out: String(e.message) }) + "\n");

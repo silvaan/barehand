@@ -189,7 +189,7 @@ the machine with no help and passed it only if Debian came up on its own with th
 
 Emulated without KVM, so every boot is slow; on real hardware these take a fraction of the time. Screenshots stayed
 in single digits: pixels to get in, the serial shell for the actual work. The agents' notes on what got in their way
-are feeding the next round of fixes.
+are feeding the next round of fixes ([`TODO.md`](TODO.md)).
 
 ## Safety first
 

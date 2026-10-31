@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.log
+.env
+barehand.config.json
+
+# lab artifacts (VM disks, ISOs, firmware vars, sockets)
+lab/state/
+*.iso
+*.qcow2
+*.img
+*.fd
+
+# firmware build output
+firmware/**/.pio/

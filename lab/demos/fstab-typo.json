@@ -1,0 +1,60 @@
+{
+  "comment": "Short clip of the fstab-typo lab run (2026-10-31). Every line is verbatim from that run's serial console and tool-call journal; long UUIDs are shortened with … the way systemd does.",
+  "frames": "~/.cache/barehand/eval/slot2/rec",
+  "segments": [
+    {
+      "caption": "won't boot · serial console",
+      "hold": 3.5,
+      "lines": [
+        "![ TIME ] Timed out waiting for device dev-d…1f2e1a-0b7d-4d5e-9a51-3f0c2b8e7d44.",
+        "![DEPEND] Dependency failed for mnt-backup.mount - /mnt/backup.",
+        "![DEPEND] Dependency failed for local-fs.target - Local File Systems.",
+        "[  OK  ] Reached target emergency.target - Emergency Mode.",
+        "You are in emergency mode. After logging in, type \"journalctl -xb\" to view",
+        "system logs, \"systemctl reboot\" to reboot, or \"exit\"",
+        "to continue bootup.",
+        "!Cannot open access to console, the root account is locked."
+      ]
+    },
+    {
+      "caption": "network boot · rescue system",
+      "screen": { "from": "2026-10-31T20:59:50Z", "to": "2026-10-31T21:02:51Z" },
+      "hold": 5
+    },
+    {
+      "caption": "fix · over the serial shell",
+      "hold": 2.6,
+      "lines": [
+        "$[root@sysrescue ~]# cat -A /mnt/root/etc/fstab",
+        "PARTUUID=84fd0772-…  /          ext4  rw,discard,errors=remount-ro,x-systemd.growfs 0 1$",
+        "PARTUUID=82e17562-…  /boot/efi  vfat  defaults,umask=077 0 2$",
+        "!UUID=6c1f2e1a-0b7d-4d5e-9a51-3f0c2b8e7d44  /mnt/backup  ext4  defaults  0  2$"
+      ]
+    },
+    {
+      "caption": "fix · over the serial shell",
+      "hold": 3,
+      "lines": [
+        "$[root@sysrescue ~]# diff fstab.bak-before-nofail fstab",
+        "3c3",
+        "!< UUID=6c1f2e1a-…  /mnt/backup  ext4  defaults  0  2",
+        "---",
+        "+> UUID=6c1f2e1a-…  /mnt/backup  ext4  defaults,nofail,x-systemd.device-timeout=10s  0  2"
+      ]
+    },
+    {
+      "caption": "power-cycled, no help · boots on its own, files intact",
+      "hold": 3.8,
+      "lines": [
+        "[  OK  ] Reached target multi-user.target - Multi-User System.",
+        "[  OK  ] Reached target graphical.target - Graphical Interface.",
+        "         Starting boot-report.service - Rep…ot completion on the serial line...",
+        "+BAREHAND-CANARY ok",
+        "",
+        "Debian GNU/Linux 13 lab-pc ttyS0",
+        "",
+        "+lab-pc login: _"
+      ]
+    }
+  ]
+}

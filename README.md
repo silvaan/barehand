@@ -16,11 +16,11 @@ then let it fix boot loaders, tweak the BIOS, partition disks and install Window
 
 <br>
 
-<img src="docs/media/demo.gif" alt="Claude fixes a Debian PC stuck in emergency mode: network-boots SystemRescue, repairs fstab over the serial shell, reboots into the fixed system" width="880">
+<img src="docs/media/clip.gif" alt="A Debian PC stuck in emergency mode: the agent network-boots SystemRescue, fixes /etc/fstab over the serial shell, and the PC boots on its own" width="880">
 
-<sub>A real, unedited run (sped up 20×): a Claude agent gets a customer ticket, network-boots a rescue system, fixes the
-broken <code>/etc/fstab</code> over the serial shell and reboots. Then a grader power-cycles the PC with no help.
-<a href="docs/media/demo.mp4">MP4</a></sub>
+<sub>A real run, sped up: Debian stuck in emergency mode → network boot of a rescue system → <code>/etc/fstab</code>
+fixed over the serial shell → power-cycled with no help, boots on its own.
+<a href="docs/media/clip.mp4">MP4</a> · <a href="docs/media/demo.mp4">longer version with the agent's tool calls</a></sub>
 
 </div>
 

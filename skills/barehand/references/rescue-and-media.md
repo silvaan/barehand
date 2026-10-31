@@ -9,7 +9,8 @@
 | QEMU lab | `ttyS0` |
 | DIY (ESP32-S3) | `ttyACM0` (USB CDC) |
 
-With SystemRescue (root, no password):
+If the system was network-booted by barehand, the console arguments are already on the kernel command line:
+skip to step 2. Otherwise, with SystemRescue (root, no password):
 1. At its boot menu (US layout): UEFI → `e` on the entry, append `console=tty0 console=ttyS0,115200`
    (or `ttyACM0`) to the `linux` line, then Ctrl-X. BIOS/ISOLINUX → Tab, append, Enter.
 2. `console_read { wait_ms: 15000 }` until a `login:` prompt appears, then `console_send { data: "root\n" }`.
@@ -23,10 +24,26 @@ still type commands with `type_text` and read the screen, but it's slow: get the
 
 ## Boot media
 
-| Backend | How |
+**Default: network boot.** It needs no extra hardware and works with every backend.
+
+1. `iso_list` → is the ISO there and does it have a recipe? If not, `iso_download` it first.
+2. `netboot_start { isos: [...], default: "<iso>" }` (mode auto: `lab` for QEMU, `proxy` on a real LAN).
+   Read the returned notes: RAM needed, Secure Boot, privileges.
+3. Make the target boot from the network:
+   - one-time boot menu key (`key_spam_until_change { key: "f12", before: "reset" }`) → pick "PXE"/"UEFI IPv4"/"Network";
+   - if no network entry exists: enable "Network Stack"/"PXE OPROM" in the BIOS, save, retry;
+   - lab: `lab/run-target.sh --netboot` boots from the network first.
+4. `netboot_status` to follow it: DHCP → `ipxe.efi` → `/boot.ipxe` → kernel → initrd → rootfs. If it stalls,
+   the last line says where (no DHCP line means the target isn't on our L2 network or PXE is off).
+5. `netboot_stop` once the system is up.
+
+The kernel command line already includes the console arguments for `shell_exec`. With SystemRescue, a root
+login prompt appears on the console on its own.
+
+| Fallbacks | How |
 |---|---|
 | QEMU, KVM appliances | `media_attach { path }` → reset → boot menu → the CD/virtual drive |
-| DIY | Ventoy stick (human plugs it in once, keeps ISOs on it) or network boot (planned) |
+| No Ethernet on the target | Ventoy stick (human plugs it in once, keeps ISOs on it) |
 
 `media_eject` when done, otherwise the next boot may go back into the installer.
 

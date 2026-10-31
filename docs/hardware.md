@@ -82,8 +82,9 @@ PWR_SW−    ◄────────── PC817 pin3 (E)    ESP32 GND  ◄�
 
 The ESP32 can't emulate a multi-GB USB stick at a usable speed (USB full-speed ≈ 1 MB/s). Instead:
 
-1. **Network boot (preferred):** the controller serves iPXE + the ISO over HTTP on the LAN, or over a
-   direct Ethernet cable. barehand can enable PXE in the BIOS by itself.
+1. **Network boot (preferred):** barehand's built-in server (`netboot_start`) answers the target's PXE
+   request and serves the ISO over HTTP on the LAN or a direct cable. It coexists with the router's DHCP.
+   barehand can enable PXE in the BIOS by itself. See [`netboot.md`](netboot.md).
 2. **Ventoy stick:** plug it in once, drop ISOs on it, and the agent picks one from the Ventoy menu.
 
 ## Tier 2: KVM appliances (planned backends)

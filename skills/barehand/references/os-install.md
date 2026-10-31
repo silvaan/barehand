@@ -23,9 +23,12 @@ iso_download { url, sha256sums_url }   →   job_status { id }   (until done, ve
 
 ## 2. Boot it
 
+- **Network boot (default, any backend):** `netboot_start` with the ISO, then boot the target from the network.
+  See [rescue-and-media](rescue-and-media.md#boot-media). Check the recipe's RAM requirement against the target.
 - **Virtual media** (QEMU, KVM appliances): `media_attach` → reset → boot-menu key → choose the CD/virtual drive.
-- **DIY hardware**: network boot (iPXE, served by the controller; *planned*), or ask the human to plug in a
-  Ventoy stick with the ISO copied onto it, then pick it in the boot menu.
+- **No Ethernet:** ask the human to plug in a Ventoy stick with the ISO on it, then pick it in the boot menu.
+- **Windows:** network boot gives Windows Setup/WinPE, which is good for repairs. A full install over the network
+  still needs the install image on an SMB share (not automated yet), so use virtual media or Ventoy for installs.
 
 ## 3. Install unattended when possible
 
@@ -38,7 +41,8 @@ Typing into installers screen by screen works, but it is slow and brittle. Prefe
 | Fedora/RHEL | kickstart (`inst.ks=…`) |
 | Windows | `autounattend.xml` at the root of any attached media |
 
-Kernel arguments are typed at the boot menu (`e` in GRUB, Tab in ISOLINUX) with US layout.
+With network boot, pass them as `netboot_start { extra_args }`. Otherwise type them at the boot menu (`e` in
+GRUB, Tab in ISOLINUX) with US layout.
 
 ## 4. Partitioning (manual layouts)
 

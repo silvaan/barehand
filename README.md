@@ -31,7 +31,7 @@ installer, where no software agent can reach.
 | 🖥️ a monitor | an HDMI capture card the agent looks through |
 | ⌨️ a USB keyboard & mouse | a microcontroller the agent types through |
 | 🔌 a serial port | a text console into the rescue system, with no network needed |
-| 💿 a boot device | an ISO the agent downloaded and served over the network |
+| 💿 a network boot server | an ISO the agent downloaded, served over PXE/iPXE from the controller |
 | 🔘 someone pressing the power button | an optocoupler on the front-panel header |
 
 The agent never needs anything installed on the broken machine.
@@ -57,7 +57,7 @@ The agent never needs anything installed on the broken machine.
 <td width="50%" valign="top">
 
 ### 💿 Install
-- Download ISOs and **verify checksums**
+- Download ISOs, **verify checksums**, and **boot them over the network** (no USB stick)
 - Unattended **Linux** installs (autoinstall, preseed, kickstart)
 - Unattended **Windows** installs (`autounattend.xml`)
 - Partitioning plans that are reviewed before anything is written
@@ -104,7 +104,7 @@ It is built on one design rule: **eyes and hands only to bootstrap, a shell for 
 
 Two layers ship together, the same way as their sibling projects:
 
-- **MCP server** for primitive, hardware-agnostic tools: `screen_capture`, `screen_wait`, `key_combo`, `key_spam_until_change`, `type_text`, `power_press`, `media_attach`, `shell_exec`, `iso_download`, `hw_identify`, `manual_fetch`, `manual_search`, …
+- **MCP server** for primitive, hardware-agnostic tools: `screen_capture`, `screen_wait`, `key_combo`, `key_spam_until_change`, `type_text`, `power_press`, `media_attach`, `shell_exec`, `iso_download`, `hw_identify`, `manual_fetch`, `manual_search`, `netboot_start`, …
 - **Skill** for the technician's playbooks: how to repair GRUB, how to find a BIOS setup key, how to plan a partition layout, when to stop and ask the human.
 
 ## Hardware
@@ -121,7 +121,10 @@ Start with no hardware at all, and buy the cheap kit when you need a real machin
 shows up as a keyboard, mouse *and* serial port (TinyUSB composite device). The UART one plugs into your
 controller PC. One board, no extra adapters. (A classic Arduino Uno can't do this: it has no native USB.)
 
-**Boot media on DIY:** the controller serves ISOs over the network (iPXE / netboot) or you plug in a Ventoy stick once.
+**Boot media needs no hardware:** barehand has a built-in network boot server (proxyDHCP + TFTP + HTTP + iPXE
+menu) that coexists with your router's DHCP. Wire the target to the same network and it boots SystemRescue,
+Ubuntu, Debian, Fedora, Arch or WinPE straight from the ISOs on the controller. Details: [`docs/netboot.md`](docs/netboot.md).
+No Ethernet port? A Ventoy stick works too.
 
 More detail, wiring and a shopping list: [`docs/hardware.md`](docs/hardware.md).
 
@@ -154,10 +157,11 @@ src/
   console.ts    serial console with marker-based shell_exec
   screen.ts     server-side screen watching (wait for change/stable, POST key spamming)
   manuals.ts    manual library: download, PDF→pages, search
+  netboot/      proxyDHCP, TFTP, HTTP, ISO 9660 reader, per-distro boot recipes, iPXE menu
 firmware/esp32s3-hid/   ESP-IDF + TinyUSB: boot keyboard, mice, CDC console, ATX power
 skills/barehand/        the technician skill and its playbooks
 lab/                    QEMU target VM + (planned) broken-on-purpose scenarios
-docs/                   hardware guide, firmware protocol
+docs/                   hardware guide, network boot, firmware protocol
 ```
 </details>
 
@@ -174,7 +178,8 @@ An agent that can format disks needs guardrails that don't depend on it behaving
 ## Roadmap
 
 - [x] Project skeleton, hardware abstraction layer
-- [x] MCP server: 25 tools (screen, keyboard, mouse, power, media, console/shell, manuals, ISOs)
+- [x] MCP server: 29 tools (screen, keyboard, mouse, power, media, console/shell, manuals, ISOs, netboot)
+- [x] Built-in network boot: proxyDHCP + TFTP + HTTP, ISO 9660 reader, recipes for 6 distro families + WinPE
 - [x] Destructive-command guard, disk identity check, pre-change snapshots
 - [x] QEMU lab backend + target VM script
 - [x] Skill with first playbooks (BIOS, boot repair, install, no-power triage, manuals)
@@ -182,7 +187,8 @@ An agent that can format disks needs guardrails that don't depend on it behaving
 - [ ] ESP32-S3 firmware validated on hardware (written, not yet flashed) + DIY backend tested
 - [ ] Broken-on-purpose lab scenarios as evals
 - [ ] Rescue image with an auto-login serial shell
-- [ ] Network boot (iPXE) served by the controller
+- [ ] Network-boot validation on real PXE ROMs (Intel, Realtek, Broadcom) and in the lab
+- [ ] Full Windows install over the network (SMB share for install.wim)
 - [ ] Bundled POST/beep code tables
 - [ ] `npx barehand setup --client …` for one-command registration
 - [ ] PiKVM / NanoKVM / JetKVM backends

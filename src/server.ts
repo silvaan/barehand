@@ -9,11 +9,12 @@ import { registerInputTools } from "./tools/input.js";
 import { registerPowerTools } from "./tools/power.js";
 import { registerConsoleTools } from "./tools/console.js";
 import { registerKnowledgeTools } from "./tools/knowledge.js";
+import { registerNetbootTools } from "./tools/netboot.js";
 import type { Ctx } from "./tools/common.js";
 import { VERSION } from "./version.js";
 
 export const INSTRUCTIONS = `barehand controls another computer out-of-band: its screen (capture card or VM), keyboard/mouse (USB HID), power button, boot media and a serial console. Nothing is installed on the target.
-Work like a careful technician: look (screen_capture) before acting; use key_spam_until_change for POST hotkeys; once a rescue Linux is up, move to shell_exec and stop driving pixels. Never run destructive operations without a written plan the user approved (shell_exec_destructive). Identify the hardware early (hw_identify, or the BIOS main page) and consult the real manual (manual_fetch / manual_search) instead of guessing vendor-specific details. Load the "barehand" skill for playbooks.`;
+Work like a careful technician: look (screen_capture) before acting; use key_spam_until_change for POST hotkeys; boot OS images over the network with netboot_start (no USB stick needed); once a rescue Linux is up, move to shell_exec and stop driving pixels. Never run destructive operations without a written plan the user approved (shell_exec_destructive). Identify the hardware early (hw_identify, or the BIOS main page) and consult the real manual (manual_fetch / manual_search) instead of guessing vendor-specific details. Load the "barehand" skill for playbooks.`;
 
 export function createServer() {
   const { config } = loadConfig();
@@ -27,6 +28,7 @@ export function createServer() {
   registerPowerTools(ctx);
   registerConsoleTools(ctx);
   registerKnowledgeTools(ctx);
+  registerNetbootTools(ctx);
 
   return { server, session };
 }

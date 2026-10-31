@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { SerialPort } from "serialport";
 import { loadConfig, configPaths } from "./config.js";
 import { Session } from "./session.js";
+import { bindUdp } from "./netboot/dhcp.js";
 import { serveStdio } from "./server.js";
 import { VERSION } from "./version.js";
 
@@ -51,6 +52,15 @@ async function doctor(): Promise<number> {
   line(config.backend === "diy" ? Boolean(ffmpeg) : ffmpeg ? true : "warn", "ffmpeg", ffmpeg ?? "not found (needed for capture cards)");
   const pdf = which("pdftotext", ["-v"]);
   line(pdf ? true : "warn", "pdftotext", pdf ?? "not found (needed to index PDF manuals: poppler-utils)");
+  const sevenZip = ["7z", "7zz", "7za"].map((b) => which(b, [])).find(Boolean);
+  line(sevenZip ? true : "warn", "7-Zip", sevenZip ? "found" : "not found (only needed to network-boot Windows ISOs)");
+  try {
+    const s = await bindUdp(67, "0.0.0.0", true);
+    s.close();
+    line(true, "netboot ports", "UDP 67 bindable");
+  } catch (e) {
+    line("warn", "netboot ports", `${(e as Error).message} (only needed for netboot on a real LAN)`);
+  }
   if (config.backend === "qemu") {
     const q = which("qemu-system-x86_64", ["--version"]);
     line(q ? true : "warn", "qemu-system-x86_64", q ?? "not found (only needed on the machine running the lab VM)");

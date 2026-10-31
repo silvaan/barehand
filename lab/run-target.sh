@@ -5,10 +5,15 @@
 #   CD-ROM        -> qdev id "cd0"        (media_attach / media_eject)
 #   NVMe disk     -> serial BH-LAB-0001   (stable identity for destructive-op checks)
 #
-# Usage: lab/run-target.sh [--iso FILE] [--disk-size 40G] [--mem 4G] [--cpus 2] [--fresh] [--vnc :1] [--legacy]
+#   --netboot     -> boots from the network first, via barehand's netboot server (netboot_start, lab mode)
+#
+# Usage: lab/run-target.sh [--iso FILE] [--netboot] [--disk-size 40G] [--mem 4G] [--cpus 2] [--fresh] [--vnc :1] [--legacy]
 set -euo pipefail
 
-STATE="${BAREHAND_WORKDIR:-$HOME/.cache/barehand}/lab"
+WORKDIR="${BAREHAND_WORKDIR:-$HOME/.cache/barehand}"
+STATE="$WORKDIR/lab"
+NETBOOT=0
+NETBOOT_PORT="${BAREHAND_NETBOOT_PORT:-8067}"
 ISO=""
 DISK_SIZE="40G"
 MEM="4G"
@@ -26,7 +31,8 @@ while [[ $# -gt 0 ]]; do
     --fresh) FRESH=1; shift ;;
     --vnc) VNC="$2"; shift 2 ;;
     --legacy) LEGACY=1; shift ;;
-    -h|--help) sed -n 2,9p "$0"; exit 0 ;;
+    --netboot) NETBOOT=1; shift ;;
+    -h|--help) sed -n 2,12p "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -68,6 +74,21 @@ if [[ -w /dev/kvm ]]; then ACCEL=(-machine q35,accel=kvm -cpu host); fi
 CDROM_FILE=""
 [[ -n "$ISO" ]] && CDROM_FILE=",file=$ISO"
 
+# Network: plain NAT, or NAT whose built-in DHCP/TFTP hands out barehand's iPXE.
+NET_ARGS=(-nic user,model=e1000)
+if [[ $NETBOOT -eq 1 ]]; then
+  TFTP_DIR="$WORKDIR/netboot/tftp"
+  [[ -f "$TFTP_DIR/ipxe.efi" ]] || echo "warning: $TFTP_DIR is empty; call netboot_start (lab mode) first" >&2
+  if [[ $LEGACY -eq 1 ]]; then
+    # QEMU's legacy NIC ROM is already iPXE: point it straight at the menu.
+    BOOTFILE="http://10.0.2.2:$NETBOOT_PORT/boot.ipxe"
+  else
+    # UEFI PXE loads ipxe.efi over TFTP; iPXE then runs autoexec.ipxe from the same place.
+    BOOTFILE="ipxe.efi"
+  fi
+  NET_ARGS=(-netdev "user,id=n0,tftp=$TFTP_DIR,bootfile=$BOOTFILE" -device "e1000,netdev=n0,bootindex=0")
+fi
+
 DISPLAY_ARGS=(-display none)
 [[ -n "$VNC" ]] && DISPLAY_ARGS=(-display none -vnc "$VNC")
 
@@ -76,6 +97,7 @@ echo "  state:  $STATE"
 echo "  qmp:    $STATE/qmp.sock"
 echo "  serial: $STATE/serial.sock"
 [[ -n "$VNC" ]] && echo "  watch:  vncviewer localhost$VNC"
+[[ $NETBOOT -eq 1 ]] && echo "  boot:   network first ($BOOTFILE)"
 echo
 
 exec qemu-system-x86_64 \
@@ -90,6 +112,6 @@ exec qemu-system-x86_64 \
   -drive "if=none,id=disk0,format=qcow2,file=$STATE/disk.qcow2" \
   -device "nvme,drive=disk0,serial=BH-LAB-0001,bootindex=2" \
   -device qemu-xhci -device usb-tablet \
-  -nic user,model=e1000 \
+  "${NET_ARGS[@]}" \
   -vga std \
   "${DISPLAY_ARGS[@]}"

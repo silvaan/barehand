@@ -125,6 +125,42 @@ controller PC. One board, no extra adapters. (A classic Arduino Uno can't do thi
 
 More detail, wiring and a shopping list: [`docs/hardware.md`](docs/hardware.md).
 
+## Quickstart (lab, no hardware)
+
+```bash
+git clone https://github.com/silvaan/barehand && cd barehand
+npm install && npm run build
+
+# start a disposable UEFI VM to practise on (see lab/README.md)
+lab/run-target.sh --iso ~/Downloads/systemrescue.iso --vnc :1
+
+npx barehand doctor                                         # connects, captures a frame
+claude mcp add barehand -- node "$PWD/dist/cli.js" serve   # register with Claude Code
+cp -r skills/barehand ~/.claude/skills/                     # install the skill
+```
+
+For real hardware: flash [`firmware/esp32s3-hid`](firmware/esp32s3-hid), wire it per
+[`docs/hardware.md`](docs/hardware.md), then set `BAREHAND_BACKEND=diy`.
+
+<details>
+<summary><b>Repository layout</b></summary>
+
+```
+src/
+  hal/          hardware abstraction: types, QEMU (QMP) backend, DIY backend, ffmpeg capture,
+                firmware protocol, HID keymaps (US, ABNT2)
+  tools/        MCP tools: screen, input, power & media, console & shell, knowledge (manuals, ISOs)
+  safety/       destructive-command guard + pre-change snapshots
+  console.ts    serial console with marker-based shell_exec
+  screen.ts     server-side screen watching (wait for change/stable, POST key spamming)
+  manuals.ts    manual library: download, PDF→pages, search
+firmware/esp32s3-hid/   ESP-IDF + TinyUSB: boot keyboard, mice, CDC console, ATX power
+skills/barehand/        the technician skill and its playbooks
+lab/                    QEMU target VM + (planned) broken-on-purpose scenarios
+docs/                   hardware guide, firmware protocol
+```
+</details>
+
 ## Safety first
 
 An agent that can format disks needs guardrails that don't depend on it behaving perfectly:
@@ -138,13 +174,16 @@ An agent that can format disks needs guardrails that don't depend on it behaving
 ## Roadmap
 
 - [x] Project skeleton, hardware abstraction layer
-- [ ] QEMU lab backend + broken-on-purpose scenarios
-- [ ] MCP tools: screen, keyboard, mouse, power, media, console
-- [ ] ESP32-S3 firmware (HID + CDC + power), DIY backend
+- [x] MCP server: 25 tools (screen, keyboard, mouse, power, media, console/shell, manuals, ISOs)
+- [x] Destructive-command guard, disk identity check, pre-change snapshots
+- [x] QEMU lab backend + target VM script
+- [x] Skill with first playbooks (BIOS, boot repair, install, no-power triage, manuals)
+- [ ] Validate end to end in the lab with a real rescue ISO
+- [ ] ESP32-S3 firmware validated on hardware (written, not yet flashed) + DIY backend tested
+- [ ] Broken-on-purpose lab scenarios as evals
 - [ ] Rescue image with an auto-login serial shell
-- [ ] Playbooks: GRUB/EFI repair, boot order, Linux install
-- [ ] Hardware knowledge: `hw_identify`, manual download + page-level search, POST/beep code tables
-- [ ] Playbooks: Windows install, BIOS navigation, no-power triage
+- [ ] Network boot (iPXE) served by the controller
+- [ ] Bundled POST/beep code tables
 - [ ] `npx barehand setup --client …` for one-command registration
 - [ ] PiKVM / NanoKVM / JetKVM backends
 

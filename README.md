@@ -12,6 +12,7 @@ then let it fix boot loaders, tweak the BIOS, partition disks and install Window
 [![skill](https://img.shields.io/badge/agent-skill-0A7EA4)](skills/barehand/SKILL.md)
 [![hardware](https://img.shields.io/badge/hardware-~US%2420-2EA44F)](#hardware)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](package.json)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <br>
 
@@ -223,6 +224,11 @@ An agent that can format disks needs guardrails that don't depend on it behaving
 
 🚧 **Early development.** The full loop works in the QEMU lab; real hardware (ESP32-S3 firmware, PXE ROMs) is
 next. Nothing here is ready to point at a machine whose data you care about yet. Watch the repo to follow along.
+
+## License
+
+[MIT](LICENSE). Use it, fork it, build on it. It comes with no warranty: an agent with a power button can still make
+mistakes, so start in the lab and keep the guardrails on.
 
 <div align="center">
 <sub>Part of a family of agent toolkits that bring AI to places it couldn't reach before.</sub>

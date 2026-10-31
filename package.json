@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Out-of-band PC technician for AI agents: see the screen, type on the keyboard, press the power button and boot ISOs on another machine through minimal hardware, exposed as an MCP server plus a skill.",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/silvaan/barehand.git"

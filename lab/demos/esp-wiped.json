@@ -1,0 +1,83 @@
+{
+  "comment": "Short clip of the esp-wiped lab run (2026-10-31). Every line is verbatim from that run's ticket, the firmware screen, the serial console and the tool-call journal; long device paths are shortened with ….",
+  "frames": "~/.cache/barehand/eval/slot1/rec",
+  "calls": "~/.cache/barehand/eval/slot1/calls.jsonl",
+  "segments": [
+    {
+      "caption": "the customer's ticket · the PC's screen",
+      "title": "“I was freeing up disk space yesterday and deleted a bunch of stuff I thought was junk. Since then the PC turns on but never gets to Linux. My thesis is on there, please don't lose my files!”",
+      "at": "2026-10-31T20:57:59.9Z",
+      "hold": 5,
+      "lines": [
+        "BdsDxe: failed to load Boot0001 \"UEFI QEMU DVD-ROM QM00011 \" …: Not Found",
+        "!BdsDxe: failed to load Boot0002 \"UEFI QEMU NVMe Ctrl BH-LAB-0001 1\" …: Not Found",
+        "",
+        ">>Start PXE over IPv4.",
+        "  PXE-E23: Client received TFTP error from server.",
+        ">>Start PXE over IPv6.",
+        "  PXE-E16: No valid offer received.",
+        ">>Start HTTP Boot over IPv4..."
+      ]
+    },
+    {
+      "caption": "network boot · rescue system",
+      "screen": { "from": "2026-10-31T20:58:17Z", "to": "2026-10-31T21:00:26Z" },
+      "hold": 5
+    },
+    {
+      "caption": "diagnose · the EFI partition is empty; kernel and system are intact",
+      "at": "2026-10-31T21:00:41.5Z",
+      "hold": 3,
+      "lines": [
+        "$[root@sysrescue ~]# mount -o ro /dev/nvme0n1p15 /mnt/esp && find /mnt/esp",
+        "!/mnt/esp",
+        "$[root@sysrescue ~]# ls -la /mnt/root/boot",
+        "-rw-r--r--  1 root root 18295862 Oct 26 04:59 initrd.img-6.12.113+deb13-cloud-amd64",
+        "-rw-r--r--  1 root root 11724736 Oct 15 15:02 vmlinuz-6.12.113+deb13-cloud-amd64"
+      ]
+    },
+    {
+      "caption": "check the customer's files first",
+      "at": "2026-10-31T21:00:49Z",
+      "hold": 2.2,
+      "lines": [
+        "$[root@sysrescue ~]# ls -laR /mnt/root/home/ana",
+        "/mnt/root/home/ana/Documents:",
+        "+-rw-r--r-- 1 root root 8106 Oct 31 20:45 thesis-final-v7.txt",
+        "/mnt/root/home/ana/Pictures:",
+        "+-rw-r--r-- 1 root root 200000 Oct 31 20:45 graduation.jpg"
+      ]
+    },
+    {
+      "caption": "fix · reinstall the bootloader from a chroot",
+      "at": "2026-10-31T21:01:14.4Z",
+      "hold": 3.4,
+      "lines": [
+        "$[root@sysrescue ~]# chroot $R grub-install --target=x86_64-efi --efi-directory=/boot/efi \\",
+        "$                        --bootloader-id=debian --force-extra-removable",
+        "Installing for x86_64-efi platform.",
+        "+Installation finished. No error reported.",
+        "$[root@sysrescue ~]# find $R/boot/efi -type f | xargs ls -la",
+        "+-rwxr-xr-x 1 root root 1036152 Oct 31 21:01 /mnt/root/boot/efi/EFI/BOOT/BOOTX64.EFI",
+        "+-rwxr-xr-x 1 root root 2684352 Oct 31 21:01 /mnt/root/boot/efi/EFI/debian/grubx64.efi",
+        "+-rwxr-xr-x 1 root root 1036152 Oct 31 21:01 /mnt/root/boot/efi/EFI/debian/shimx64.efi"
+      ]
+    },
+    {
+      "caption": "result",
+      "title": "✓ Fixed. Power-cycled with no help: boots to the login prompt, customer files verified intact.",
+      "titleColor": "0x3fb950",
+      "at": "2026-10-31T21:07:29Z",
+      "hold": 4.5,
+      "lines": [
+        "[  OK  ] Reached target multi-user.target - Multi-User System.",
+        "         Starting boot-report.service - Rep…ot completion on the serial line...",
+        "+BAREHAND-CANARY ok",
+        "",
+        "Debian GNU/Linux 13 lab-pc ttyS0",
+        "",
+        "+lab-pc login: _"
+      ]
+    }
+  ]
+}

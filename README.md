@@ -16,11 +16,13 @@ then let it fix boot loaders, tweak the BIOS, partition disks and install Window
 
 <br>
 
-<img src="docs/media/clip.gif" alt="A Debian PC stuck in emergency mode: the agent network-boots SystemRescue, fixes /etc/fstab over the serial shell, and the PC boots on its own" width="880">
+<img src="docs/media/clip.gif" alt="A customer deleted the EFI partition's contents; the agent network-boots a rescue system, checks the files, reinstalls the bootloader, and the PC boots on its own" width="880">
 
-<sub>A real run, sped up: Debian stuck in emergency mode → network boot of a rescue system → <code>/etc/fstab</code>
-fixed over the serial shell → power-cycled with no help, boots on its own.
-<a href="docs/media/clip.mp4">MP4</a> · <a href="docs/media/demo.mp4">longer version with the agent's tool calls</a></sub>
+<sub>A real run, sped up. "I deleted a bunch of junk and now it never gets to Linux": the firmware finds nothing to
+boot → network boot of a rescue system → empty EFI partition diagnosed, customer files checked first → bootloader
+reinstalled → power-cycled with no help, boots on its own.
+<a href="docs/media/clip.mp4">MP4</a> · <a href="docs/media/clip-fstab.mp4">another case</a> ·
+<a href="docs/media/demo.mp4">long version with the agent's tool calls</a></sub>
 
 </div>
 
